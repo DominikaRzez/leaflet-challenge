@@ -1,13 +1,13 @@
-// Defininh getColor function to later create legend and markers
-function getColor(d){
+  // Defining getColor function to later create legend and markers
+  function getColor(d){
     return d > 90 ? "#db514f":
           d > 70 ? "#db854f":
           d > 50 ? "#dbac4f":
           d > 30 ? "#dbd24f":
           d > 10 ? "#b6db4f":
                   "#4fdb58";
-  }
-  
+  };
+
   // Creating the createMap function.
   function createMap(earthquakes) {
   
@@ -15,21 +15,47 @@ function getColor(d){
   var lightmap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   });
-  
-    // Creating a baseMaps object to hold the lightmap layer.
+  // Satellite tile layer
+  var satelite = L.tileLayer('http://{s}.google.com/vt/lyrs=s&x={x}&y={y}&z={z}',{
+    maxZoom: 20,
+    subdomains:['mt0','mt1','mt2','mt3']
+});
+    //Terrain tile layer
+var terrain = L.tileLayer('http://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}',{
+    maxZoom: 20,
+    subdomains:['mt0','mt1','mt2','mt3']
+});
+    //Outdoors tile layer
+    var outdoors = L.tileLayer('https://tiles.stadiamaps.com/tiles/outdoors/{z}/{x}/{y}{r}.png', {
+	maxZoom: 20,
+	attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+});
+    //Dark tile layer
+var dark = L.tileLayer('https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png', {
+	maxZoom: 20,
+	attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a>, &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors'
+});
+
+    // Creating a baseMaps object to hold the tile layers.
   var baseMaps = {
-    "Street": lightmap
+    "Street": lightmap,
+    "Satellite": satelite,
+    "Terrain": terrain,
+    "Outdoors": outdoors,
+    "Dark": dark
   };
-    // Creating an overlayMaps object to hold the eartquakes layer.
+
+    // Creating an overlayMaps object to hold the eartquakes and tectonic plates layers.
   var overlayMaps = {
-    "Earthquakes": earthquakes
+    "Earthquakes": earthquakes,
+    "Tectonic plates": tectonicPlates
   };
   
-    // Create the map object with options.
+    // Create the map object with options and setting street map and earthquakes layer as default.
   var myMap = L.map("map", {
     center: [34.11, -107.299],
     zoom: 6,
-    layers: [lightmap, earthquakes]
+    layers: [lightmap, earthquakes, tectonicPlates]
   });
   
     // Creating a layer control, and passing it baseMaps and overlayMaps. 
@@ -87,12 +113,16 @@ function getColor(d){
     //and passing it to the createMap function.
     createMap(L.layerGroup(earthquakeMarkers));
   };
-  
+
   // Performing an API call to the USGS feed to get the earthquake information. 
   //Calling createMarkers when it completes.
   var url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
-  d3.json(url).then(createMarkers)
+  d3.json(url).then(createMarkers);
+
+  //Defining url for tectonic plates
   var platesURL = "https://raw.githubusercontent.com/fraxen/tectonicplates/master/GeoJSON/PB2002_plates.json"
-  d3.json(platesURL).then(function (data){
-    console.log(data)
-  })
+  var tectonicPlates = new L.LayerGroup();
+  d3.json(platesURL, function(data) {
+    var tectonicPlates = L.geoJson(data);
+    tectonicPlates.addTo(myMap)
+});
