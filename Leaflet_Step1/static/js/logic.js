@@ -1,56 +1,95 @@
-// Storing API endpoint as queryUrl.
-var queryUrl = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson";
-  
-  function createMap (earthquakes) {
-      //Creating the tile layer that will be the background of the map
-      var streetmap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'  
-  });
-
-  // Create a baseMaps object to hold the streetmap layer.
-  var baseMaps = {
-    "Street Map": streetmap
-  };
-
-  // Create an overlayMaps object to hold the erthquake layer.
-  var overlayMaps = {
-    "Eartquakes": earthquakes
-  };
-
-  // Create the map object with options.
-  var map = L.map("map", {
-    center: [40.73, -74.0059],
-    zoom: 12,
-    layers: [streetmap, earthquakes]
-  });
-
-  // Create a layer control, and pass it baseMaps and overlayMaps. Add the layer control to the map.
-  L.control.layers(baseMaps, overlayMaps, {
-    collapsed: false
-  }).addTo(map);
+// Defininh getColor function to later create legend and markers
+function getColor(d){
+  return d > 90 ? "#db514f":
+        d > 70 ? "#db854f":
+        d > 50 ? "#dbac4f":
+        d > 30 ? "#dbd24f":
+        d > 10 ? "#b6db4f":
+                "#4fdb58";
 }
 
-function createMarkers(response) {
-    console.log(response)
+// Creating the createMap function.
+function createMap(earthquakes) {
 
-    //Pulling the features property from response
-    var incidents = response.features
+  // Creating the tile layer that will be the background of the map.
+var lightmap = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+});
 
-     // Initialize an array to hold bike markers.
-     var earthquakeMarkers = []
+  // Creating a baseMaps object to hold the lightmap layer.
+var baseMaps = {
+  "Street": lightmap
+};
+  // Creating an overlayMaps object to hold the eartquakes layer.
+var overlayMaps = {
+  "Earthquakes": earthquakes
+};
 
-    // Pulling the magnitude, depth and coordinates from response
-    for (var i = 0; i < incidents.length; i++) {
-        var incident = incidents[i];
-        var magnitude = incident.properties.mag;
-        var depth = incident.geometry.coordinates[2];
-        var coordinates = [incident.geometry.coordinates[0],incident.geometry.coordinates[1]];
-        var earthquakeMarker = L.marker(coordinates)
-        earthquakeMarkers.push(earthquakeMarker)
-    }
-    createMap(L.layerGroup(earthquakeMarkers));
-   
+  // Create the map object with options.
+var myMap = L.map("map", {
+  center: [34.11, -107.299],
+  zoom: 6,
+  layers: [lightmap, earthquakes]
+});
+
+  // Creating a layer control, and passing it baseMaps and overlayMaps. 
+  //Adding the layer control to the map.
+  L.control.layers(baseMaps, overlayMaps).addTo(myMap);
+
+  //Creating legend
+  var legend = L.control({position: 'bottomright'});
+  legend.onAdd = function (map) {
+  var div = L.DomUtil.create('div', 'info legend'),
+  depths = [0, 10, 30, 50, 70, 90],
+  labels = [];
+  // loop through our density intervals and generate a label with a colored square for each interval
+  for (var i = 0; i < depths.length; i++) {
+    div.innerHTML +=
+    '<i style="background:' + getColor(depths[i] + 1) + '"></i> ' +
+    depths[i] + (depths[i + 1] ? '&ndash;' + depths[i + 1] + '<br>' : '+');
   }
-  
-  // Perform an API call to the Citi Bike API to get the station information. Call createMarkers when it completes.
-d3.json(queryUrl).then(createMarkers);
+  return div;
+};
+legend.addTo(myMap);
+};
+
+// Creating the createMarkers function.
+function createMarkers(response) {
+  d3.json("https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson").then(function(data){
+    console.log(data)
+  });
+
+  // Pulling all of the records for eartquakes from response.
+  var incidents = response.features;
+
+  // Initialising an array to hold the eartquake markers.
+  var earthquakeMarkers = [];
+
+  // Looping through the incidents array.
+  for (var i = 0; i < incidents.length; i++) {
+    // Pulling magnitude and depth details
+    var magnitude = incidents[i].properties.mag;
+    var depth = incidents[i].geometry.coordinates[2];
+    var location = incidents[i].properties.place
+    console.log(depth);
+      
+      // Creating marker for each eartquake and binding a popup with the earthquake's details
+      var EarthquakeMarker = L.circle([incidents[i].geometry.coordinates[1], incidents[i].geometry.coordinates[0]], {
+      color: 'black',
+      fillColor: getColor(depth),
+      fillOpacity: 0.75,
+      radius: magnitude * 10000 
+    }).bindPopup("<h1> Location: </h1> <h2>" + location + "</h2> <hr> <h2> Magnitude: </h2> <h3>" +
+    magnitude + "</h3> <br> <h2> Depth: </h2> <h3>" + depth + "</h3>")
+    // Adding the marker to the earthquakeMarkers array.
+    earthquakeMarkers.push(EarthquakeMarker)
+}
+  // Creating a layer group that's made from the earthquake markers array, 
+  //and passing it to the createMap function.
+  createMap(L.layerGroup(earthquakeMarkers));
+};
+
+// Performing an API call to the USGS feed to get the earthquake information. 
+//Calling createMarkers when it completes.
+var url = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_week.geojson"
+d3.json(url).then(createMarkers)
