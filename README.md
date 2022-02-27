@@ -5,4 +5,4 @@
 <img src="images/basic version.png">
 
 <p>The second JavaScript code adds a number of base maps to choose from as well as separate out two different data sets into overlays that can be turned on and off independently. The second data set illustrates the relationship between tectonic plates and seismic activity. Data on tectonic plates has been pulled from <a href="https://github.com/fraxen/tectonicplates">https://github.com/fraxen/tectonicplates</a>.</p>
-<img src="images/optional">
+<img src="images/optional.png">
